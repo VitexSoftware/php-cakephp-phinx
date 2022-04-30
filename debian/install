@@ -1,0 +1,2 @@
+phinx.phar usr/bin/
+src/Phinx usr/share/php/

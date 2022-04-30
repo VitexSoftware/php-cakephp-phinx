@@ -1,0 +1,33 @@
+# DP: use autoloader from the system package composer
+# DP: fetch version as-installed
+
+--- a/bin/phinx
++++ b/bin/phinx
+@@ -24,5 +24,14 @@
+  * IN THE SOFTWARE.
+  */
+ 
+-$app = require __DIR__ . '/../app/phinx.php';
++if (!include_once('Composer/Autoload/ClassLoader.php')) {
++	echo "\nE: install composer for the CLI to work!\n";
++	exit(255);
++}
++
++$loader = new \Composer\Autoload\ClassLoader();
++$loader->setUseIncludePath(true);
++$loader->register();
++
++$app = new Phinx\Console\PhinxApplication();
+ $app->run();
+--- a/src/Phinx/Console/PhinxApplication.php
++++ b/src/Phinx/Console/PhinxApplication.php
+@@ -49,8 +49,7 @@ class PhinxApplication extends Applicati
+      */
+     public function __construct()
+     {
+-        $composerConfig = json_decode(file_get_contents(__DIR__ . '/../../../composer.json'));
+-        $version = $composerConfig->version;
++        $version = shell_exec("dpkg-query -Wf '\${Version}' php-robmorgan-phinx");
+ 
+         parent::__construct('Phinx by CakePHP - https://phinx.org.', $version);
+ 

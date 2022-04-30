@@ -1,0 +1,8 @@
+# there are no tests
+php-cakephp-phinx source: testsuite-autopkgtest-missing
+
+# upstream uses github…
+php-cakephp-phinx source: debian-watch-does-not-check-gpg-signature
+
+# thanks, but no
+php-cakephp-phinx source: no-dep5-copyright

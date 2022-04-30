@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_clean:
+	composer update
+	rm -f php-cakephp-phinx.phar
+	dh_clean
+
+override_dh_prepare:
+	php -d phar.readonly=off /usr/bin/phar-composer -n build --ansi php-cakephp-phinx
+	dh_prepare
+
+override_dh_install:
+	dh_install
+	mv debian/php-cakephp-phinx/usr/bin/phinx.phar debian/php-cakephp-phinx/usr/bin/phinx
+
+

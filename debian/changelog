@@ -1,0 +1,25 @@
+php-cakephp-phinx (0.12.10) UNRELEASED; urgency=medium
+
+  * debianized again
+
+ -- vitex <info@vitexsoftware.cz>  Sat, 30 Apr 2022 16:06:19 +0200
+
+php-robmorgan-phinx (0.9.2-3) unstable; urgency=medium
+
+  * Brown paper bag, should un-FTBFS reproducible builds
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Sun, 01 Dec 2019 20:42:12 +0100
+
+php-robmorgan-phinx (0.9.2-2) unstable; urgency=medium
+
+  * debian/patches/pkg-php-tools-deficiency-workaround.diff:
+    switch over to requiring symfony 4.x (Closes: #939191), cf. #765899
+  * modernise packaging
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Wed, 20 Nov 2019 00:48:29 +0100
+
+php-robmorgan-phinx (0.9.2-1) unstable; urgency=medium
+
+  * Initial release
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Fri, 18 May 2018 20:48:26 +0200

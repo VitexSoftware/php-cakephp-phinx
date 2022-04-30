@@ -1,0 +1,9 @@
+{
+  "Archive": "GitHub",
+  "Bug-Database": "https://github.com/cakephp/phinx/issues",
+  "Bug-Submit": "https://github.com/cakephp/phinx/issues/new",
+  "Documentation": "https://book.cakephp.org/3.0/en/phinx.html",
+  "Name": "Phinx",
+  "Repository": "git@github.com:cakephp/phinx.git",
+  "Repository-Browse": "https://github.com/cakephp/phinx"
+}

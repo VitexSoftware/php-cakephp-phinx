@@ -1,0 +1,4 @@
+version=3
+opts=uversionmangle=s/-?([^\.\d]+)/\~$1/;tr/A-Z/a-z/ \
+https://github.com/cakephp/phinx/releases \
+.*/archive/(?:v|x)?(.+).tar.gz

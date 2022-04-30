@@ -1,0 +1,122 @@
+.\" Copyright (c) 2018 mirabilos, The Debian Project
+.\" Copyright (c) 2012-2017 Rob Morgan
+.\"
+.\" Permission is hereby granted, free of charge, to any person obtaining a
+.\" copy of this software and associated documentation files (the
+.\" "Software"), to deal in the Software without restriction, including
+.\" without limitation the rights to use, copy, modify, merge, publish,
+.\" distribute, sublicense, and/or sell copies of the Software, and to
+.\" permit persons to whom the Software is furnished to do so, subject to
+.\" the following conditions:
+.\"
+.\" The above copyright notice and this permission notice shall be included
+.\" in all copies or substantial portions of the Software.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+.\" OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+.\" MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+.\" IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+.\" CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+.\" TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+.\" SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+.\"-
+.Dd March 18, 2018
+.Dt PHINX 1
+.Os Debian
+.Sh NAME
+.Nm phinx
+.Nd PHP database migration tool
+.Sh SYNOPSIS
+.Nm
+.Fl V | Fl \-version
+.Pp
+.Nm
+.Op Fl hnqv
+.Op Fl \-help
+.Op Fl \-no\-interaction
+.Op Fl \-quiet
+.Op Fl \-verbose
+.Op Fl \-\fR[\fPno\-\fR]\fPansi
+.Op Ar "further options"
+.Ar command
+.Op Ar arg ...
+.Sh DESCRIPTION
+The
+.Nm
+utility assists with using the Phinx database migration tool.
+This manual page is only an introduction for the utility written
+for Debian (but may be used by others) and not a substitute for
+its interactive help facility or the official documentation; the
+closest to a documentation for this utility is probably here:
+.Pa https://book.cakephp.org/3.0/en/phinx/commands.html
+.Pp
+In general,
+.Nm
+operates by calling a subcommand, which may or may not have their
+own (optional or required) options and arguments, in additions to
+a few global options, which are as follows (the descriptions were
+taken straight from the utility's on-line help messages):
+.Bl -tag -width Ds
+.It Fl h , Fl \-help
+Display the on-line help.
+.It Fl n , Fl \-no\-interaction
+Do not ask any interactive question.
+.It Fl q , Fl \-quiet
+Do not output any message.
+.It Fl V , Fl \-version
+Show the application version and immediately exit (do not run any subcommand).
+.It Fl v , Fl \-verbose
+Increase the verbosity of messages.
+This option may be passed up to three times to increase verbosity:
+once for normal output, twice for more verbose output, and thrice
+for debugging output.
+.It Fl \-ansi , Fl \-no\-ansi
+Force or disable, respectively, ANSI escape coloured output.
+.El
+.Pp
+The subcommands are as follows:
+.Pp
+.Bl -tag -width seedXcreate -compact
+.It Ic breakpoint
+Manage breakpoints
+.It Ic create
+Create a new migration
+.It Ic help
+Displays help for a command
+.It Ic init
+Initialise the application for Phinx
+.It Ic list
+Lists commands
+.It Ic migrate
+Migrate the database
+.It Ic rollback
+Rollback the last or to a specific migration
+.It Ic seed:create
+Create a new database seeder
+.It Ic seed:run
+Run database seeders
+.It Ic status
+Show migration status
+.It Ic test
+Verify the configuration file
+.El
+.Pp
+Documentation for a specific subcommand can be retrieved with:
+.br
+.Li $ phinx help Ar command
+.Sh DIAGNOSTICS
+The
+.Nm
+utility exits with errorlevel 255 in Debian if the package
+.Nm composer
+is not installed, which is an optional dependency
+.Pq Dq Recommends .
+The
+.Ic status
+subcommand exits with errorlevel 0 if the database is up-to-date,
+1 if there is at least one migration to execute, and 2 if a migration
+already run and recorded in the database is now missing.
+Other exit statuses are not documented.
+Please complain to upstream about this.
+.Sh SEE ALSO
+.Pa https://book.cakephp.org/3.0/en/phinx/commands.html

@@ -1,0 +1,25 @@
+Source: php-cakephp-phinx
+Section: php
+Priority: optional
+Maintainer: Teckids Debian Task Force <tdtf@lists.teckids.org>
+Uploaders: Thorsten Glaser <tg@mirbsd.de>, Dominik George <natureshadow@debian.org>
+Build-Depends: debhelper-compat (= 12), pkg-php-tools (>= 1.7~)
+Standards-Version: 4.4.1
+Homepage: https://phinx.org/
+Rules-Requires-Root: no
+Vcs-Git: https://salsa.debian.org/tdtf-team/php-robmorgan-phinx.git
+Vcs-Browser: https://salsa.debian.org/tdtf-team/php-robmorgan-phinx
+
+Package: php-cakephp-phinx
+Architecture: all
+Depends: ${misc:Depends}, ${phpcomposer:Debian-require}
+Recommends: ${phpcomposer:Debian-recommend}, composer
+Suggests: ${phpcomposer:Debian-suggest}
+Replaces: ${phpcomposer:Debian-replace}
+Breaks: ${phpcomposer:Debian-conflict}, ${phpcomposer:Debian-replace}
+Provides: ${phpcomposer:Debian-provide}, phinx, php-robmorgan-phinx
+Description: Simple PHP Database Migrations
+ Phinx makes it ridiculously easy to manage the database migrations for
+ your PHP app. In less than 5 minutes, you can install Phinx and create
+ your first database migration. Phinx is just about migrations without
+ all the bloat of a database ORM system or framework.
