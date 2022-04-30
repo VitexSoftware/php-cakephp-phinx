@@ -10,9 +10,9 @@ override_dh_clean:
 	rm -f php-cakephp-phinx.phar
 	dh_clean
 
-override_dh_prepare:
-	php -d phar.readonly=off /usr/bin/phar-composer -n build --ansi php-cakephp-phinx
-	dh_prepare
+override_dh_prep:
+	php -d phar.readonly=off /usr/bin/phar-composer -n build --ansi .
+	dh_prep
 
 override_dh_install:
 	dh_install
