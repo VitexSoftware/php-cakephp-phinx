@@ -1,4 +1,5 @@
 <?php
+
 namespace Test\Phinx\Console\Command\TemplateGenerators;
 
 use Phinx\Migration\AbstractTemplateCreation;
@@ -12,9 +13,10 @@ class NullGenerator extends AbstractTemplateCreation
      *
      * @return string The content of the template for Phinx to amend.
      */
-    public function getMigrationTemplate()
+    public function getMigrationTemplate(): string
     {
         // Implement getMigrationTemplate() method.
+        return '';
     }
 
     /**
@@ -28,7 +30,7 @@ class NullGenerator extends AbstractTemplateCreation
      * @param string $baseClassName The name of the base class.
      * @return void
      */
-    public function postMigrationCreation($migrationFilename, $className, $baseClassName)
+    public function postMigrationCreation(string $migrationFilename, string $className, string $baseClassName): void
     {
         // Implement postMigrationCreation() method.
     }

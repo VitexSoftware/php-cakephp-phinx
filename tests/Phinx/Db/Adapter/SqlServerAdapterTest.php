@@ -50,6 +50,14 @@ class SqlServerAdapterTest extends TestCase
         $this->assertSame(\PDO::ERRMODE_EXCEPTION, $this->adapter->getConnection()->getAttribute(\PDO::ATTR_ERRMODE));
     }
 
+    public function testConnectionWithDsnOptions()
+    {
+        $options = $this->adapter->getOptions();
+        $options['dsn_options'] = ['TrustServerCertificate' => 'true'];
+        $this->adapter->setOptions($options);
+        $this->assertInstanceOf('PDO', $this->adapter->getConnection());
+    }
+
     public function testConnectionWithFetchMode()
     {
         $options = $this->adapter->getOptions();
@@ -226,8 +234,8 @@ WHERE t.name='ntable'");
             'primary_key' => ['user_id', 'tag_id'],
         ];
         $table = new \Phinx\Db\Table('table1', $options, $this->adapter);
-        $table->addColumn('user_id', 'integer')
-              ->addColumn('tag_id', 'integer')
+        $table->addColumn('user_id', 'integer', ['null' => false])
+              ->addColumn('tag_id', 'integer', ['null' => false])
               ->save();
         $this->assertTrue($this->adapter->hasIndex('table1', ['user_id', 'tag_id']));
         $this->assertTrue($this->adapter->hasIndex('table1', ['tag_id', 'USER_ID']));
@@ -241,7 +249,7 @@ WHERE t.name='ntable'");
             'primary_key' => 'id',
         ];
         $table = new \Phinx\Db\Table('ztable', $options, $this->adapter);
-        $table->addColumn('id', 'uuid')->save();
+        $table->addColumn('id', 'uuid', ['null' => false])->save();
         $table->addColumn('user_id', 'integer')->save();
         $this->assertTrue($this->adapter->hasColumn('ztable', 'id'));
         $this->assertTrue($this->adapter->hasIndex('ztable', 'id'));
@@ -255,7 +263,7 @@ WHERE t.name='ntable'");
             'primary_key' => 'id',
         ];
         $table = new \Phinx\Db\Table('ztable', $options, $this->adapter);
-        $table->addColumn('id', 'binaryuuid')->save();
+        $table->addColumn('id', 'binaryuuid', ['null' => false])->save();
         $table->addColumn('user_id', 'integer')->save();
         $this->assertTrue($this->adapter->hasColumn('ztable', 'id'));
         $this->assertTrue($this->adapter->hasIndex('ztable', 'id'));
@@ -301,7 +309,7 @@ WHERE t.name='ntable'");
     {
         $table = new \Phinx\Db\Table('table1', ['id' => false], $this->adapter);
         $table
-            ->addColumn('column1', 'integer')
+            ->addColumn('column1', 'integer', ['null' => false])
             ->save();
 
         $table
@@ -315,9 +323,9 @@ WHERE t.name='ntable'");
     {
         $table = new \Phinx\Db\Table('table1', ['id' => false, 'primary_key' => 'column1'], $this->adapter);
         $table
-            ->addColumn('column1', 'integer')
-            ->addColumn('column2', 'integer')
-            ->addColumn('column3', 'integer')
+            ->addColumn('column1', 'integer', ['null' => false])
+            ->addColumn('column2', 'integer', ['null' => false])
+            ->addColumn('column3', 'integer', ['null' => false])
             ->save();
 
         $table
@@ -332,7 +340,7 @@ WHERE t.name='ntable'");
     {
         $table = new \Phinx\Db\Table('table1', ['id' => false, 'primary_key' => 'column1'], $this->adapter);
         $table
-            ->addColumn('column1', 'integer')
+            ->addColumn('column1', 'integer', ['null' => false])
             ->save();
 
         $table
@@ -418,6 +426,21 @@ WHERE t.name='ntable'");
         }
     }
 
+    public function testAddColumnWithNotNullableNoDefault()
+    {
+        $table = new \Phinx\Db\Table('table1', [], $this->adapter);
+        $table
+            ->addColumn('col', 'string', ['null' => false])
+            ->create();
+
+        $columns = $this->adapter->getColumns('table1');
+        $this->assertCount(2, $columns);
+        $this->assertArrayHasKey('id', $columns);
+        $this->assertArrayHasKey('col', $columns);
+        $this->assertFalse($columns['col']->isNull());
+        $this->assertNull($columns['col']->getDefault());
+    }
+
     public function testAddColumnWithDefaultBool()
     {
         $table = new \Phinx\Db\Table('table1', [], $this->adapter);
@@ -435,6 +458,39 @@ WHERE t.name='ntable'");
                 $this->assertSame(1, $column->getDefault());
             }
         }
+    }
+
+    public function testAddColumnWithCustomType()
+    {
+        $this->adapter->setDataDomain([
+            'custom' => [
+                'type' => 'geometry',
+                'null' => true,
+            ],
+        ]);
+
+        (new \Phinx\Db\Table('table1', [], $this->adapter))
+            ->addColumn('custom', 'custom')
+            ->addColumn('custom_ext', 'custom', [
+                'null' => false,
+            ])
+            ->save();
+
+        $this->assertTrue($this->adapter->hasTable('table1'));
+
+        $columns = $this->adapter->getColumns('table1');
+        $this->assertArrayHasKey('custom', $columns);
+        $this->assertArrayHasKey('custom_ext', $columns);
+
+        $column = $this->adapter->getColumns('table1')['custom'];
+        $this->assertSame('custom', $column->getName());
+        $this->assertSame('geometry', (string)$column->getType());
+        $this->assertTrue($column->getNull());
+
+        $column = $this->adapter->getColumns('table1')['custom_ext'];
+        $this->assertSame('custom_ext', $column->getName());
+        $this->assertSame('geometry', (string)$column->getType());
+        $this->assertFalse($column->getNull());
     }
 
     public function testRenameColumn()
@@ -489,7 +545,7 @@ WHERE t.name='ntable'");
     public function testChangeColumnNameAndNull()
     {
         $table = new \Phinx\Db\Table('t', [], $this->adapter);
-        $table->addColumn('column1', 'string')
+        $table->addColumn('column1', 'string', ['null' => false])
             ->save();
         $newColumn2 = new \Phinx\Db\Table\Column();
         $newColumn2->setName('column2')
@@ -1021,7 +1077,7 @@ WHERE t.name='ntable'");
 
         $table = new \Phinx\Db\Table('table1', ['id' => false, 'primary_key' => ['column1']], $this->adapter);
 
-        $table->addColumn('column1', 'string')
+        $table->addColumn('column1', 'string', ['null' => false])
             ->addColumn('column2', 'integer')
             ->save();
 
@@ -1034,7 +1090,7 @@ WHERE t.name='ntable'");
         ])->save();
 
         $expectedOutput = <<<'OUTPUT'
-CREATE TABLE [table1] ([column1] NVARCHAR (255)   NOT NULL , [column2] INT   NOT NULL , CONSTRAINT PK_table1 PRIMARY KEY ([column1]));
+CREATE TABLE [table1] ([column1] NVARCHAR (255)   NOT NULL , [column2] INT   NULL  DEFAULT NULL, CONSTRAINT PK_table1 PRIMARY KEY ([column1]));
 INSERT INTO [table1] ([column1], [column2]) VALUES ('id1', 1);
 OUTPUT;
         $actualOutput = str_replace("\r\n", "\n", $consoleOutput->fetch());
@@ -1106,6 +1162,37 @@ OUTPUT;
             ->execute();
 
         $stm->closeCursor();
+    }
+
+    public function testQueryWithParams()
+    {
+        $table = new \Phinx\Db\Table('table1', [], $this->adapter);
+        $table->addColumn('string_col', 'string')
+            ->addColumn('int_col', 'integer')
+            ->save();
+
+        $this->adapter->insert($table->getTable(), [
+            'string_col' => 'test data',
+            'int_col' => 10,
+        ]);
+
+        $this->adapter->insert($table->getTable(), [
+            'string_col' => null,
+        ]);
+
+        $this->adapter->insert($table->getTable(), [
+            'int_col' => 23,
+        ]);
+
+        $countQuery = $this->adapter->query('SELECT COUNT(*) AS c FROM table1 WHERE int_col > ?', [5]);
+        $res = $countQuery->fetchAll();
+        $this->assertEquals(2, $res[0]['c']);
+
+        $this->adapter->execute('UPDATE table1 SET int_col = ? WHERE int_col IS NULL', [12]);
+
+        $countQuery->execute([1]);
+        $res = $countQuery->fetchAll();
+        $this->assertEquals(3, $res[0]['c']);
     }
 
     public function testLiteralSupport()

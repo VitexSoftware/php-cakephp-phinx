@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Test\Phinx\Db\Adapter;
 
 use PDOException;
+use Phinx\Config\FeatureFlags;
 use Phinx\Db\Adapter\AdapterInterface;
 use Phinx\Db\Adapter\MysqlAdapter;
 use Phinx\Util\Literal;
@@ -140,7 +141,7 @@ class MysqlAdapterTest extends TestCase
     {
         $sql = "CREATE TABLE `discouraged.naming.convention`
                 (id INT(11) NOT NULL)
-                ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci";
+                ENGINE = InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
         $this->adapter->execute($sql);
         $this->assertTrue($this->adapter->hasTable('discouraged.naming.convention'));
     }
@@ -156,6 +157,11 @@ class MysqlAdapterTest extends TestCase
         $this->assertTrue($this->adapter->hasColumn('ntable', 'realname'));
         $this->assertTrue($this->adapter->hasColumn('ntable', 'email'));
         $this->assertFalse($this->adapter->hasColumn('ntable', 'address'));
+
+        $columns = $this->adapter->getColumns('ntable');
+        $this->assertCount(3, $columns);
+        $this->assertSame('id', $columns[0]->getName());
+        $this->assertFalse($columns[0]->isSigned());
     }
 
     public function testCreateTableWithComment()
@@ -186,7 +192,7 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('ntable', [], $this->adapter);
         $table->addColumn('realname', 'string')
-              ->addColumn('tag_id', 'integer')
+              ->addColumn('tag_id', 'integer', ['signed' => false])
               ->addForeignKey('tag_id', 'ntable_tag', 'id', ['delete' => 'NO_ACTION', 'update' => 'NO_ACTION'])
               ->save();
 
@@ -287,8 +293,8 @@ class MysqlAdapterTest extends TestCase
             'primary_key' => ['user_id', 'tag_id'],
         ];
         $table = new \Phinx\Db\Table('table1', $options, $this->adapter);
-        $table->addColumn('user_id', 'integer')
-              ->addColumn('tag_id', 'integer')
+        $table->addColumn('user_id', 'integer', ['null' => false])
+              ->addColumn('tag_id', 'integer', ['null' => false])
               ->save();
         $this->assertTrue($this->adapter->hasIndex('table1', ['user_id', 'tag_id']));
         $this->assertTrue($this->adapter->hasIndex('table1', ['USER_ID', 'tag_id']));
@@ -306,7 +312,7 @@ class MysqlAdapterTest extends TestCase
             'primary_key' => 'id',
         ];
         $table = new \Phinx\Db\Table('ztable', $options, $this->adapter);
-        $table->addColumn('id', 'uuid')->save();
+        $table->addColumn('id', 'uuid', ['null' => false])->save();
         $table->addColumn('user_id', 'integer')->save();
         $this->assertTrue($this->adapter->hasColumn('ztable', 'id'));
         $this->assertTrue($this->adapter->hasIndex('ztable', 'id'));
@@ -323,7 +329,7 @@ class MysqlAdapterTest extends TestCase
             'primary_key' => 'id',
         ];
         $table = new \Phinx\Db\Table('ztable', $options, $this->adapter);
-        $table->addColumn('id', 'binaryuuid')->save();
+        $table->addColumn('id', 'binaryuuid', ['null' => false])->save();
         $table->addColumn('user_id', 'integer')->save();
         $this->assertTrue($this->adapter->hasColumn('ztable', 'id'));
         $this->assertTrue($this->adapter->hasIndex('ztable', 'id'));
@@ -347,7 +353,7 @@ class MysqlAdapterTest extends TestCase
     public function testCreateTableWithUniqueIndexes()
     {
         $table = new \Phinx\Db\Table('table1', [], $this->adapter);
-        $table->addColumn('email', 'string')
+        $table->addColumn('email', 'string', ['limit' => 191])
               ->addIndex('email', ['unique' => true])
               ->save();
         $this->assertTrue($this->adapter->hasIndex('table1', ['email']));
@@ -393,8 +399,8 @@ class MysqlAdapterTest extends TestCase
     public function testCreateTableAndInheritDefaultCollation()
     {
         $options = MYSQL_DB_CONFIG + [
-            'charset' => 'utf8',
-            'collation' => 'utf8_unicode_ci',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
         ];
         $adapter = new MysqlAdapter($options, new ArrayInput([]), new NullOutput());
 
@@ -408,7 +414,7 @@ class MysqlAdapterTest extends TestCase
               ->save();
         $this->assertTrue($adapter->hasTable('table_with_default_collation'));
         $row = $adapter->fetchRow(sprintf("SHOW TABLE STATUS WHERE Name = '%s'", 'table_with_default_collation'));
-        $this->assertEquals('utf8_unicode_ci', $row['Collation']);
+        $this->assertEquals('utf8mb4_unicode_ci', $row['Collation']);
     }
 
     public function testCreateTableWithLatin1Collate()
@@ -419,6 +425,25 @@ class MysqlAdapterTest extends TestCase
         $this->assertTrue($this->adapter->hasTable('latin1_table'));
         $row = $this->adapter->fetchRow(sprintf("SHOW TABLE STATUS WHERE Name = '%s'", 'latin1_table'));
         $this->assertEquals('latin1_general_ci', $row['Collation']);
+    }
+
+    public function testCreateTableWithSignedPK()
+    {
+        $table = new \Phinx\Db\Table('ntable', ['signed' => true], $this->adapter);
+        $table->addColumn('realname', 'string')
+            ->addColumn('email', 'integer')
+            ->save();
+        $this->assertTrue($this->adapter->hasTable('ntable'));
+        $this->assertTrue($this->adapter->hasColumn('ntable', 'id'));
+        $this->assertTrue($this->adapter->hasColumn('ntable', 'realname'));
+        $this->assertTrue($this->adapter->hasColumn('ntable', 'email'));
+        $this->assertFalse($this->adapter->hasColumn('ntable', 'address'));
+        $column_definitions = $this->adapter->getColumns('ntable');
+        foreach ($column_definitions as $column_definition) {
+            if ($column_definition->getName() === 'id') {
+                $this->assertTrue($column_definition->getSigned());
+            }
+        }
     }
 
     public function testCreateTableWithUnsignedPK()
@@ -459,6 +484,24 @@ class MysqlAdapterTest extends TestCase
         $this->assertFalse($this->adapter->hasColumn('ntable', 'address'));
     }
 
+    /**
+     * @runInSeparateProcess
+     */
+    public function testUnsignedPksFeatureFlag()
+    {
+        $this->adapter->connect();
+
+        FeatureFlags::$unsignedPrimaryKeys = false;
+
+        $table = new \Phinx\Db\Table('table1', [], $this->adapter);
+        $table->create();
+
+        $columns = $this->adapter->getColumns('table1');
+        $this->assertCount(1, $columns);
+        $this->assertSame('id', $columns[0]->getName());
+        $this->assertTrue($columns[0]->getSigned());
+    }
+
     public function testCreateTableWithLimitPK()
     {
         $table = new \Phinx\Db\Table('ntable', ['id' => 'id', 'limit' => 4], $this->adapter);
@@ -496,7 +539,7 @@ class MysqlAdapterTest extends TestCase
     {
         $table = new \Phinx\Db\Table('table1', ['id' => false, 'primary_key' => 'column1'], $this->adapter);
         $table
-            ->addColumn('column1', 'integer')
+            ->addColumn('column1', 'integer', ['null' => false])
             ->addColumn('column2', 'integer')
             ->addColumn('column3', 'integer')
             ->save();
@@ -513,7 +556,7 @@ class MysqlAdapterTest extends TestCase
     {
         $table = new \Phinx\Db\Table('table1', ['id' => false, 'primary_key' => 'column1'], $this->adapter);
         $table
-            ->addColumn('column1', 'integer')
+            ->addColumn('column1', 'integer', ['null' => false])
             ->save();
 
         $table
@@ -671,6 +714,53 @@ class MysqlAdapterTest extends TestCase
         $this->assertTrue($rows[1]['Default'] === 'CURRENT_TIMESTAMP' || $rows[1]['Default'] === 'current_timestamp()');
     }
 
+    public function testAddColumnWithCustomType()
+    {
+        $this->adapter->setDataDomain([
+            'custom1' => [
+                'type' => 'enum',
+                'null' => true,
+                'values' => 'a,b,c',
+            ],
+            'custom2' => [
+                'type' => 'enum',
+                'null' => true,
+                'values' => ['a', 'b', 'c'],
+            ],
+        ]);
+
+        (new \Phinx\Db\Table('table1', [], $this->adapter))
+            ->addColumn('custom1', 'custom1')
+            ->addColumn('custom2', 'custom2')
+            ->addColumn('custom_ext', 'custom2', [
+                'null' => false,
+                'values' => ['d', 'e', 'f'],
+            ])
+            ->save();
+
+        $this->assertTrue($this->adapter->hasTable('table1'));
+
+        $columns = $this->adapter->getColumns('table1');
+
+        $this->assertArrayHasKey(1, $columns);
+        $this->assertArrayHasKey(2, $columns);
+        $this->assertArrayHasKey(3, $columns);
+
+        foreach ([1, 2] as $index) {
+            $column = $this->adapter->getColumns('table1')[$index];
+            $this->assertSame("custom{$index}", $column->getName());
+            $this->assertSame('enum', $column->getType());
+            $this->assertSame(['a', 'b', 'c'], $column->getValues());
+            $this->assertTrue($column->getNull());
+        }
+
+        $column = $this->adapter->getColumns('table1')[3];
+        $this->assertSame('custom_ext', $column->getName());
+        $this->assertSame('enum', $column->getType());
+        $this->assertSame(['d', 'e', 'f'], $column->getValues());
+        $this->assertFalse($column->getNull());
+    }
+
     public function testAddColumnFirst()
     {
         $table = new \Phinx\Db\Table('table1', [], $this->adapter);
@@ -764,14 +854,14 @@ class MysqlAdapterTest extends TestCase
 
     public function testAddStringColumnWithCustomCollation()
     {
-        $table = new \Phinx\Db\Table('table_custom_collation', ['collation' => 'utf8_general_ci'], $this->adapter);
+        $table = new \Phinx\Db\Table('table_custom_collation', ['collation' => 'utf8mb4_unicode_ci'], $this->adapter);
         $table->save();
         $this->assertFalse($table->hasColumn('string_collation_default'));
         $this->assertFalse($table->hasColumn('string_collation_custom'));
         $table->addColumn('string_collation_default', 'string', [])->save();
         $table->addColumn('string_collation_custom', 'string', ['collation' => 'utf8mb4_unicode_ci'])->save();
         $rows = $this->adapter->fetchAll('SHOW FULL COLUMNS FROM table_custom_collation');
-        $this->assertEquals('utf8_general_ci', $rows[1]['Collation']);
+        $this->assertEquals('utf8mb4_unicode_ci', $rows[1]['Collation']);
         $this->assertEquals('utf8mb4_unicode_ci', $rows[2]['Collation']);
     }
 
@@ -971,7 +1061,7 @@ class MysqlAdapterTest extends TestCase
     }
 
     /** @dataProvider binaryToBlobAutomaticConversionData */
-    public function testBinaryToBlobAutomaticConversion(?int $limit = null, string $expectedType, int $expectedLimit)
+    public function testBinaryToBlobAutomaticConversion(?int $limit, string $expectedType, int $expectedLimit)
     {
         $table = new \Phinx\Db\Table('t', [], $this->adapter);
         $table->addColumn('column1', 'binary', ['limit' => $limit])
@@ -998,7 +1088,7 @@ class MysqlAdapterTest extends TestCase
     }
 
     /** @dataProvider varbinaryToBlobAutomaticConversionData */
-    public function testVarbinaryToBlobAutomaticConversion(?int $limit = null, string $expectedType, int $expectedLimit)
+    public function testVarbinaryToBlobAutomaticConversion(?int $limit, string $expectedType, int $expectedLimit)
     {
         $table = new \Phinx\Db\Table('t', [], $this->adapter);
         $table->addColumn('column1', 'varbinary', ['limit' => $limit])
@@ -1040,7 +1130,7 @@ class MysqlAdapterTest extends TestCase
     }
 
     /** @dataProvider blobColumnsData */
-    public function testblobColumns(string $type, string $expectedType, ?int $limit = null, int $expectedLimit)
+    public function testblobColumns(string $type, string $expectedType, ?int $limit, int $expectedLimit)
     {
         $table = new \Phinx\Db\Table('t', [], $this->adapter);
         $table->addColumn('column1', $type, ['limit' => $limit])
@@ -1199,7 +1289,7 @@ class MysqlAdapterTest extends TestCase
             ['column10', 'timestamp', []],
             ['column11', 'date', []],
             ['column12', 'binary', []],
-            ['column13', 'boolean', []],
+            ['column13', 'boolean', ['comment' => 'Lorem ipsum']],
             ['column14', 'string', ['limit' => 10]],
             ['column16', 'geometry', []],
             ['column17', 'point', []],
@@ -1242,6 +1332,10 @@ class MysqlAdapterTest extends TestCase
 
         if (isset($options['scale'])) {
             $this->assertEquals($options['scale'], $columns[1]->getScale());
+        }
+
+        if (isset($options['comment'])) {
+            $this->assertEquals($options['comment'], $columns[1]->getComment());
         }
     }
 
@@ -1497,21 +1591,21 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer')
+            ->addColumn('ref_table_id', 'integer', ['signed' => false])
             ->addForeignKey(['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
         $this->assertTrue($this->adapter->hasForeignKey($table->getName(), ['ref_table_id']));
     }
 
-    public function testAddForeignKeyForTableWithUnsignedPK()
+    public function testAddForeignKeyForTableWithSignedPK()
     {
-        $refTable = new \Phinx\Db\Table('ref_table', ['signed' => false], $this->adapter);
+        $refTable = new \Phinx\Db\Table('ref_table', ['signed' => true], $this->adapter);
         $refTable->addColumn('field1', 'string')->save();
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer', ['signed' => false])
+            ->addColumn('ref_table_id', 'integer')
             ->addForeignKey(['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1525,7 +1619,7 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer')
+            ->addColumn('ref_table_id', 'integer', ['signed' => false])
             ->addForeignKey(['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1533,14 +1627,14 @@ class MysqlAdapterTest extends TestCase
         $this->assertFalse($this->adapter->hasForeignKey($table->getName(), ['ref_table_id']));
     }
 
-    public function testDropForeignKeyForTableWithUnsignedPK()
+    public function testDropForeignKeyForTableWithSignedPK()
     {
-        $refTable = new \Phinx\Db\Table('ref_table', ['signed' => false], $this->adapter);
+        $refTable = new \Phinx\Db\Table('ref_table', ['signed' => true], $this->adapter);
         $refTable->addColumn('field1', 'string')->save();
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer', ['signed' => false])
+            ->addColumn('ref_table_id', 'integer')
             ->addForeignKey(['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1555,7 +1649,7 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer')
+            ->addColumn('ref_table_id', 'integer', ['signed' => false])
             ->addForeignKey(['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1570,7 +1664,7 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer')
+            ->addColumn('ref_table_id', 'integer', ['signed' => false])
             ->addForeignKey(['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1585,7 +1679,7 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer')
+            ->addColumn('ref_table_id', 'integer', ['signed' => false])
             ->addForeignKeyWithName('my_constraint', ['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1593,14 +1687,14 @@ class MysqlAdapterTest extends TestCase
         $this->assertFalse($this->adapter->hasForeignKey($table->getName(), ['ref_table_id'], 'my_constraint2'));
     }
 
-    public function testHasForeignKeyWithConstraintForTableWithUnsignedPK()
+    public function testHasForeignKeyWithConstraintForTableWithSignedPK()
     {
-        $refTable = new \Phinx\Db\Table('ref_table', ['signed' => false], $this->adapter);
+        $refTable = new \Phinx\Db\Table('ref_table', ['signed' => true], $this->adapter);
         $refTable->addColumn('field1', 'string')->save();
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer', ['signed' => false])
+            ->addColumn('ref_table_id', 'integer')
             ->addForeignKeyWithName('my_constraint', ['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1615,7 +1709,7 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('table', [], $this->adapter);
         $table
-            ->addColumn('ref_table_id', 'integer')
+            ->addColumn('ref_table_id', 'integer', ['signed' => false])
             ->addForeignKey(['ref_table_id'], 'ref_table', ['id'])
             ->save();
 
@@ -1812,13 +1906,13 @@ class MysqlAdapterTest extends TestCase
 
         $table = new \Phinx\Db\Table('table1', [], $this->adapter);
 
-        $table->addColumn('column1', 'string')
+        $table->addColumn('column1', 'string', ['null' => false])
             ->addColumn('column2', 'integer')
-            ->addColumn('column3', 'string', ['default' => 'test'])
+            ->addColumn('column3', 'string', ['default' => 'test', 'null' => false])
             ->save();
 
         $expectedOutput = <<<'OUTPUT'
-CREATE TABLE `table1` (`id` INT(11) NOT NULL AUTO_INCREMENT, `column1` VARCHAR(255) NOT NULL, `column2` INT(11) NOT NULL, `column3` VARCHAR(255) NOT NULL DEFAULT 'test', PRIMARY KEY (`id`)) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE TABLE `table1` (`id` INT(11) unsigned NOT NULL AUTO_INCREMENT, `column1` VARCHAR(255) NOT NULL, `column2` INT(11) NULL, `column3` VARCHAR(255) NOT NULL DEFAULT 'test', PRIMARY KEY (`id`)) ENGINE = InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 OUTPUT;
         $actualOutput = $consoleOutput->fetch();
         $this->assertStringContainsString($expectedOutput, $actualOutput, 'Passing the --dry-run option does not dump create table query to the output');
@@ -1924,7 +2018,7 @@ OUTPUT;
 
         $table = new \Phinx\Db\Table('table1', ['id' => false, 'primary_key' => ['column1']], $this->adapter);
 
-        $table->addColumn('column1', 'string')
+        $table->addColumn('column1', 'string', ['null' => false])
             ->addColumn('column2', 'integer')
             ->save();
 
@@ -1935,7 +2029,7 @@ OUTPUT;
         ])->save();
 
         $expectedOutput = <<<'OUTPUT'
-CREATE TABLE `table1` (`column1` VARCHAR(255) NOT NULL, `column2` INT(11) NOT NULL, PRIMARY KEY (`column1`)) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE TABLE `table1` (`column1` VARCHAR(255) NOT NULL, `column2` INT(11) NULL, PRIMARY KEY (`column1`)) ENGINE = InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 INSERT INTO `table1` (`column1`, `column2`) VALUES ('id1', 1);
 OUTPUT;
         $actualOutput = $consoleOutput->fetch();
@@ -2010,6 +2104,37 @@ OUTPUT;
             ->execute();
 
         $this->assertEquals(1, $stm->rowCount());
+    }
+
+    public function testQueryWithParams()
+    {
+        $table = new \Phinx\Db\Table('table1', [], $this->adapter);
+        $table->addColumn('string_col', 'string')
+            ->addColumn('int_col', 'integer')
+            ->save();
+
+        $this->adapter->insert($table->getTable(), [
+            'string_col' => 'test data',
+            'int_col' => 10,
+        ]);
+
+        $this->adapter->insert($table->getTable(), [
+            'string_col' => null,
+        ]);
+
+        $this->adapter->insert($table->getTable(), [
+            'int_col' => 23,
+        ]);
+
+        $countQuery = $this->adapter->query('SELECT COUNT(*) AS c FROM table1 WHERE int_col > ?', [5]);
+        $res = $countQuery->fetchAll();
+        $this->assertEquals(2, $res[0]['c']);
+
+        $this->adapter->execute('UPDATE table1 SET int_col = ? WHERE int_col IS NULL', [12]);
+
+        $countQuery->execute([1]);
+        $res = $countQuery->fetchAll();
+        $this->assertEquals(3, $res[0]['c']);
     }
 
     public function testLiteralSupport()
@@ -2213,5 +2338,17 @@ INPUT;
 
         $this->assertSame($expectedResponse['name'], $result['name'], "Type mismatch - got '{$result['name']}' when expecting '{$expectedResponse['name']}'");
         $this->assertSame($expectedResponse['limit'], $result['limit'], "Field upper boundary mismatch - got '{$result['limit']}' when expecting '{$expectedResponse['limit']}'");
+    }
+
+    public function testPdoPersistentConnection()
+    {
+        $adapter = new MysqlAdapter(MYSQL_DB_CONFIG + ['attr_persistent' => true]);
+        $this->assertTrue($adapter->getConnection()->getAttribute(\PDO::ATTR_PERSISTENT));
+    }
+
+    public function testPdoNotPersistentConnection()
+    {
+        $adapter = new MysqlAdapter(MYSQL_DB_CONFIG);
+        $this->assertFalse($adapter->getConnection()->getAttribute(\PDO::ATTR_PERSISTENT));
     }
 }
