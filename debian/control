@@ -3,7 +3,7 @@ Section: php
 Priority: optional
 Maintainer: Teckids Debian Task Force <tdtf@lists.teckids.org>
 Uploaders: Thorsten Glaser <tg@mirbsd.de>, Dominik George <natureshadow@debian.org>
-Build-Depends: debhelper-compat (= 12), pkg-php-tools (>= 1.7~), phar-composer
+Build-Depends: debhelper-compat (= 12), pkg-php-tools (>= 1.7~), phar-composer, ext-intl
 Standards-Version: 4.4.1
 Homepage: https://phinx.org/
 Rules-Requires-Root: no
@@ -12,7 +12,7 @@ Vcs-Browser: https://salsa.debian.org/tdtf-team/php-robmorgan-phinx
 
 Package: php-cakephp-phinx
 Architecture: all
-Depends: ${misc:Depends}, ${phpcomposer:Debian-require}
+Depends: ${misc:Depends}, ${phpcomposer:Debian-require},ext-intl,php-pdo
 Recommends: ${phpcomposer:Debian-recommend}, composer
 Suggests: ${phpcomposer:Debian-suggest}
 Replaces: ${phpcomposer:Debian-replace}
