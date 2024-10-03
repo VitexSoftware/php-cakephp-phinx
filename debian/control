@@ -3,7 +3,7 @@ Section: php
 Priority: optional
 Maintainer: Teckids Debian Task Force <tdtf@lists.teckids.org>
 Uploaders: Thorsten Glaser <tg@mirbsd.de>, Dominik George <natureshadow@debian.org>
-Build-Depends: debhelper-compat (= 12), pkg-php-tools (>= 1.7~), phar-composer, ext-intl
+Build-Depends: debhelper-compat (= 12), pkg-php-tools (>= 1.7~), phar-composer, php-intl
 Standards-Version: 4.4.1
 Homepage: https://phinx.org/
 Rules-Requires-Root: no
