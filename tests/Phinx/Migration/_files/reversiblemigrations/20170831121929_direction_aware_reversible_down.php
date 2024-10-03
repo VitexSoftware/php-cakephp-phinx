@@ -1,5 +1,6 @@
 <?php
 
+use Cake\Database\Query;
 use Phinx\Db\Table\Column;
 use Phinx\Migration\AbstractMigration;
 
@@ -15,7 +16,7 @@ class DirectionAwareReversibleDown extends AbstractMigration
             ->update();
 
         if ($this->isMigratingUp()) {
-            $query = $this->getQueryBuilder();
+            $query = $this->getQueryBuilder(Query::TYPE_UPDATE);
             $query
                 ->update('change_direction_test')
                 ->set(['subthing' => $query->identifier('thing')])
@@ -23,7 +24,7 @@ class DirectionAwareReversibleDown extends AbstractMigration
                 ->execute();
         } else {
             $this
-                ->getQueryBuilder()
+                ->getQueryBuilder(Query::TYPE_UPDATE)
                 ->update('change_direction_test')
                 ->set(['subthing' => null])
                 ->execute();

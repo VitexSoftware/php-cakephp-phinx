@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Test\Phinx\Console;
 
@@ -24,7 +25,10 @@ class PhinxApplicationTest extends TestCase
         $stream = $appTester->getOutput()->getStream();
         rewind($stream);
 
-        $this->assertStringContainsString($result, stream_get_contents($stream));
+        $contents = stream_get_contents($stream);
+
+        $this->assertMatchesRegularExpression('/^Phinx by CakePHP - https:\/\/phinx.org\. .+\n/', $contents);
+        $this->assertStringContainsString($result, $contents);
     }
 
     public function provider()

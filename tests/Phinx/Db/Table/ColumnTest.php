@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Test\Phinx\Db\Table;
 
@@ -17,6 +18,13 @@ class ColumnTest extends TestCase
         $this->expectExceptionMessage('"0" is not a valid column option.');
 
         $column->setOptions(['identity']);
+    }
+
+    public function testGetType()
+    {
+        $column = new Column();
+        $this->expectException(RuntimeException::class);
+        $column->getType();
     }
 
     public function testSetOptionsIdentity()

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Test\Phinx\Db\Table;
 
@@ -31,6 +32,12 @@ class ForeignKeyTest extends TestCase
     {
         $this->assertNull($this->fk->getOnDelete());
         $this->assertNull($this->fk->getOnUpdate());
+    }
+
+    public function testRefrencedTableUndefined()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->fk->getReferencedTable();
     }
 
     /**
