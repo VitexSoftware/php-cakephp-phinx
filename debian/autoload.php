@@ -7,7 +7,7 @@ require_once '/usr/share/php/Cake/Database/autoload.php';
 require_once '/usr/share/php/Psr/Container/autoload.php';
 require_once '/usr/share/php/Symfony/Component/Console/autoload.php';
 require_once '/usr/share/php/Symfony/Component/Config/autoload.php';
-require_once '/usr/share/php/Symfony/Polyfill/php80/autoload.php';
+require_once '/usr/share/php/Symfony/Polyfill/Php80/autoload.php';
 
 spl_autoload_register(function (string $class): void {
     $prefix = 'Phinx\\';
